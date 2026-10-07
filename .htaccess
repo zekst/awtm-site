@@ -1,0 +1,40 @@
+# awtmforge.com, a static export served from public_html. Clean URLs map to
+# their .html files, www and http redirect to the https apex, and the build's
+# hashed assets cache for a year. DEPLOY.md explains each block.
+Options -Indexes -MultiViews
+ErrorDocument 404 /404.html
+
+RewriteEngine On
+
+# www and http to the https apex, one hop.
+RewriteCond %{HTTP_HOST} ^www\.awtmforge\.com$ [NC,OR]
+RewriteCond %{HTTPS} !=on
+RewriteRule ^(.*)$ https://awtmforge.com/$1 [R=301,L]
+
+# A trailing slash goes to the clean URL.
+RewriteCond %{REQUEST_URI} ^(.+)/$
+RewriteRule ^ %1 [R=301,L]
+
+# /web/landing-pages serves web/landing-pages.html; /web serves web.html even
+# though a web/ directory exists beside it.
+RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+RewriteRule ^(.+)$ $1.html [L]
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  <FilesMatch "\.(woff2|css|png|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.js$">
+    Header set Cache-Control "public, max-age=31536000"
+  </FilesMatch>
+  <FilesMatch "\.(html|xml|txt|webmanifest)$">
+    Header set Cache-Control "public, max-age=300"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_mime.c>
+  AddType font/woff2 .woff2
+  AddType application/manifest+json .webmanifest
+</IfModule>
